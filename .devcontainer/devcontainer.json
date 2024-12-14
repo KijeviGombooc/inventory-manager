@@ -1,0 +1,17 @@
+{
+	"name": "quiz-server",
+	"build": {
+		"dockerfile": "../Dockerfile",
+		"target": "dev"
+	},
+	"remoteEnv": {
+		"DOCKER_HOST": "tcp://host.docker.internal:2375"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.Go"
+			]
+		}
+	}
+}
