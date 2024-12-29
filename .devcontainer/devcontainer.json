@@ -10,7 +10,9 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"golang.Go"
+				"mhutchie.git-graph",
+				"golang.Go",
+				"humao.rest-client"
 			]
 		}
 	}
