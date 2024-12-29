@@ -1,5 +1,11 @@
 package inventory
 
+import (
+	"fmt"
+
+	"github.com/kijevigombooc/inventory-manager/internal/utils"
+)
+
 func NewService(store *store) *service {
 	return &service{store: store}
 }
@@ -21,13 +27,17 @@ func (s *service) GetWarehouses() ([]WarehouseDetailDto, error) {
 	}
 	result := []WarehouseDetailDto{}
 	for _, warehouse := range warehouses {
-		products, err := trx.GetProductsByWarehouse(warehouse.Name)
+		productEntities, err := trx.GetProductsByWarehouse(warehouse.Name)
+		if err != nil {
+			return nil, err
+		}
+		productDtos, err := utils.MapErrored(productEntities, productEntityWithQuantityToDtoWithQuantity)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, WarehouseDetailDto{
 			WarehouseDto: WarehouseEntityToDto(warehouse),
-			Products:     products,
+			Products:     productDtos,
 		})
 	}
 	if err := trx.CommitTransaction(); err != nil {
@@ -48,11 +58,69 @@ func (s *service) CreateWarehouse(warehouse WarehouseDto) error {
 	return nil
 }
 
-func (s *service) InsertProducts(products []interface{}, quantity int) error {
+func (s *service) InsertProducts(warehouse string, product IProduct, quantity int) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
-	// TODO: finish this
+	warehouses, err := trx.GetWarehousesOrderedFirstWithName(warehouse)
+	if err != nil {
+		return err
+	}
+	remainingQuantity := quantity
+	for _, warehouse := range warehouses {
+		usedCapacity, err := trx.GetUsedCapacity(warehouse.Name)
+		if err != nil {
+			return err
+		}
+		availableCapacity := warehouse.Capacity - usedCapacity
+		toInsertQuantity := min(availableCapacity, remainingQuantity)
+		productEntity, err := productDtoToEntity(product)
+		if err != nil {
+			return err
+		}
+		if err := trx.InsertProduct(warehouse.Name, productEntity, toInsertQuantity); err != nil {
+			return err
+		}
+		remainingQuantity -= toInsertQuantity
+		if remainingQuantity == 0 {
+			break
+		}
+	}
+	if remainingQuantity > 0 {
+		return fmt.Errorf("not enough capacity in warehouses")
+	}
+	if err := trx.CommitTransaction(); err != nil {
+		return err
+	}
 	return nil
+}
+
+func productDtoToEntity(product IProduct) (IProduct, error) {
+	switch product.GetType() {
+	case Book:
+		bookProduct := product.(BookProductDto)
+		return BookProductEntity{
+			ProductEntity: ProductEntity(bookProduct.ProductDto),
+			Author:        bookProduct.Author,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown product type")
+	}
+}
+
+func productEntityWithQuantityToDtoWithQuantity(productEntity ProductEntityWithQuantity) (ProductDtoWithQuantity, error) {
+	switch productEntity.Product.GetType() {
+	case Book:
+		bookProductEntity := productEntity.Product.(BookProductEntity)
+		return ProductDtoWithQuantity{
+			IProduct: BookProductDto{
+				ProductDto: ProductDto(bookProductEntity.ProductEntity),
+				Author:     bookProductEntity.Author,
+			},
+			Quantity: productEntity.Quantity,
+		}, nil
+	default:
+		return ProductDtoWithQuantity{}, fmt.Errorf("unknown product type")
+	}
 }
 
 func (s *service) RemoveProducts(sku string, quantity int) error {

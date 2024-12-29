@@ -44,6 +44,22 @@ func (h *handler) createWarehouse(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
+	var req InsertProductsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := req.ParseProduct(); err != nil {
+		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.InsertProducts(req.WarehouseName, req.ParsedProduct, req.Quantity); err != nil {
+		writeErrorMessageJSON(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, req, http.StatusOK)
 }
 
 func (h *handler) removeProducts(w http.ResponseWriter, r *http.Request) {
