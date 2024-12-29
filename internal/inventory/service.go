@@ -84,9 +84,43 @@ func (s *service) InsertProducts(warehouse string, product IProduct, quantity in
 		if remainingQuantity == 0 {
 			break
 		}
+		if remainingQuantity < 0 {
+			return fmt.Errorf("inserted more products than needed")
+		}
 	}
 	if remainingQuantity > 0 {
 		return fmt.Errorf("not enough capacity in warehouses")
+	}
+	if err := trx.CommitTransaction(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) RemoveProducts(warehouseName string, sku string, quantity int) error {
+	trx := s.store.BeginTransaction()
+	defer trx.EndTransaction()
+
+	warehouseProducts, err := trx.GetWarehouseProductsBySkuOrderedFirstWithName(warehouseName, sku)
+	if err != nil {
+		return err
+	}
+	remainingQuantity := quantity
+	for _, warehouseProduct := range warehouseProducts {
+		removedQuantity, err := trx.RemoveProduct(warehouseProduct.WarehouseName, warehouseProduct.Sku, remainingQuantity)
+		if err != nil {
+			return err
+		}
+		remainingQuantity -= removedQuantity
+		if remainingQuantity == 0 {
+			break
+		}
+		if remainingQuantity < 0 {
+			return fmt.Errorf("removed more products than needed")
+		}
+	}
+	if remainingQuantity > 0 {
+		return fmt.Errorf("not enough product in warehouses")
 	}
 	if err := trx.CommitTransaction(); err != nil {
 		return err
@@ -121,11 +155,4 @@ func productEntityWithQuantityToDtoWithQuantity(productEntity ProductEntityWithQ
 	default:
 		return ProductDtoWithQuantity{}, fmt.Errorf("unknown product type")
 	}
-}
-
-func (s *service) RemoveProducts(sku string, quantity int) error {
-	trx := s.store.BeginTransaction()
-	defer trx.EndTransaction()
-	// TODO: finish this
-	return nil
 }

@@ -18,9 +18,9 @@ type ProductEntityWithQuantity struct {
 }
 
 type WarehouseProductEntity struct {
-	Warehouse string
-	Sku       string
-	Quantity  int
+	WarehouseName string
+	Sku           string
+	Quantity      int
 }
 
 type ProductType string
@@ -77,6 +77,12 @@ func (ipr *InsertProductsRequest) ParseProduct() error {
 		return fmt.Errorf("unknown product type")
 	}
 	return nil
+}
+
+type RemoveProductsRequest struct {
+	WarehouseName string `json:"warehouseName"`
+	Sku           string `json:"sku"`
+	Quantity      int    `json:"quantity"`
 }
 
 type ProductDto struct {

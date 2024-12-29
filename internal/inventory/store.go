@@ -20,6 +20,11 @@ type store struct {
 }
 
 func (s *store) init() error {
+	// TODO: check if required
+	if _, err := s.db.Exec("PRAGMA foreign_keys=ON"); err != nil {
+		return err
+	}
+
 	if _, err := s.db.Exec(`
 		CREATE TABLE IF NOT EXISTS warehouses (
 			name TEXT PRIMARY KEY,
@@ -55,7 +60,7 @@ func (s *store) init() error {
 		CREATE TABLE IF NOT EXISTS book_products (
 			sku TEXT PRIMARY KEY,
 			author TEXT NOT NULL,
-			FOREIGN KEY (sku) REFERENCES products (sku)
+			FOREIGN KEY (sku) REFERENCES products (sku) ON DELETE CASCADE
 		)
 	`); err != nil {
 		return err
@@ -143,7 +148,7 @@ func (t *Transaction) GetProductsByWarehouse(name string) ([]ProductEntityWithQu
 		SELECT p.sku, p.name, p.price, p.type, wp.quantity
 		FROM products p
 		JOIN warehouse_products wp ON p.sku = wp.sku
-		WHERE wp.warehouse_name = ?
+		WHERE wp.warehouse_name = ? AND wp.quantity > 0
 	`, name)
 	if err != nil {
 		return nil, err
@@ -176,7 +181,6 @@ func (t *Transaction) GetUsedCapacity(name string) (int, error) {
 	}
 	return usedCapacity, nil
 }
-
 func (t *Transaction) InsertProduct(warehouseName string, product IProduct, toInsertQuantity int) error {
 	_, err := t.tx.Exec(`
 		INSERT OR IGNORE INTO products (sku, name, price, type)
@@ -199,6 +203,63 @@ func (t *Transaction) InsertProduct(warehouseName string, product IProduct, toIn
 		DO UPDATE SET quantity = quantity + ?
 	`, warehouseName, product.GetSKU(), toInsertQuantity, toInsertQuantity)
 	return err
+}
+
+func (t *Transaction) GetWarehouseProductsBySkuOrderedFirstWithName(warehouseName string, sku string) ([]WarehouseProductEntity, error) {
+	rows, err := t.tx.Query(`
+		SELECT wp.warehouse_name, wp.sku, wp.quantity
+		FROM warehouse_products wp
+		WHERE wp.sku = ?
+		ORDER BY CASE WHEN wp.warehouse_name = ? THEN 0 ELSE 1 END, wp.warehouse_name
+	`, sku, warehouseName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []WarehouseProductEntity
+	for rows.Next() {
+		var wpe WarehouseProductEntity
+		if err := rows.Scan(&wpe.WarehouseName, &wpe.Sku, &wpe.Quantity); err != nil {
+			return nil, err
+		}
+		result = append(result, wpe)
+	}
+	return result, nil
+}
+
+func (t *Transaction) RemoveProduct(warehouseName string, sku string, toRemoveQuantity int) (int, error) {
+	query := `
+		SELECT quantity FROM warehouse_products
+		WHERE warehouse_name = ? AND sku = ?
+	`
+	queryResult := t.tx.QueryRow(query, warehouseName, sku)
+	if queryResult.Err() == sql.ErrNoRows {
+		return 0, nil
+	}
+	originalQuantity := 0
+	if err := queryResult.Scan(&originalQuantity); err != nil {
+		return 0, err
+	}
+	updateQuery := `
+		UPDATE warehouse_products
+		SET quantity = CASE
+			WHEN quantity - ? < 0 THEN 0
+			ELSE quantity - ?
+		END
+		WHERE warehouse_name = ? AND sku = ?
+		RETURNING quantity AS new_quantity
+	`
+	updateResult := t.tx.QueryRow(updateQuery, toRemoveQuantity, toRemoveQuantity, warehouseName, sku)
+	if updateResult.Err() == sql.ErrNoRows {
+		return 0, nil
+	}
+	newQuantity := 0
+	if err := updateResult.Scan(&newQuantity); err != nil {
+		return 0, err
+	}
+	// TODO: clear row if not needed (if 0 quantity)
+	removedQuantity := originalQuantity - newQuantity
+	return removedQuantity, nil
 }
 
 func (t *Transaction) mapCurrentRowsToProduct(rows *sql.Rows) (IProduct, int, error) {

@@ -63,6 +63,16 @@ func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) removeProducts(w http.ResponseWriter, r *http.Request) {
+	var req RemoveProductsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := h.service.RemoveProducts(req.WarehouseName, req.Sku, req.Quantity); err != nil {
+		writeErrorMessageJSON(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, req, http.StatusOK)
 }
 
 func writeErrorMessageJSON(w http.ResponseWriter, message string, statusCode int) {
