@@ -1,0 +1,19 @@
+### Warehouse 1
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+  "name": "Warehouse 1",
+  "address": "123 Main St",
+  "capacity": 5
+}
+
+### Warehouse 2
+POST http://localhost:8080/warehouses
+Content-Type: application/json
+
+{
+  "name": "Warehouse 2",
+  "address": "123 Secondary St",
+  "capacity": 3
+}
