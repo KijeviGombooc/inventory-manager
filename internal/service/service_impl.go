@@ -17,14 +17,14 @@ type inventoryService struct {
 	store store.Store
 }
 
-func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetailDto, error) {
+func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetail, error) {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 	warehouses, err := trx.GetWarehouses()
 	if err != nil {
 		return nil, err
 	}
-	result := []dto.WarehouseDetailDto{}
+	result := []dto.WarehouseDetail{}
 	for _, warehouse := range warehouses {
 		productEntities, err := trx.GetProductsByWarehouse(warehouse.Name)
 		if err != nil {
@@ -34,9 +34,9 @@ func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetailDto, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, dto.WarehouseDetailDto{
-			WarehouseDto: warehouseEntityToDto(warehouse),
-			Products:     productDtos,
+		result = append(result, dto.WarehouseDetail{
+			Warehouse: warehouseEntityToDto(warehouse),
+			Products:  productDtos,
 		})
 	}
 	if err := trx.CommitTransaction(); err != nil {
@@ -45,7 +45,7 @@ func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetailDto, error) {
 	return result, nil
 }
 
-func (s *inventoryService) CreateWarehouse(warehouse dto.WarehouseDto) error {
+func (s *inventoryService) CreateWarehouse(warehouse dto.Warehouse) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 	if err := trx.InsertWarehouse(domain.Warehouse(warehouse)); err != nil {
@@ -127,14 +127,14 @@ func (s *inventoryService) RemoveProducts(warehouseName string, sku string, quan
 	return nil
 }
 
-func warehouseEntityToDto(we domain.Warehouse) dto.WarehouseDto {
-	return dto.WarehouseDto(we)
+func warehouseEntityToDto(we domain.Warehouse) dto.Warehouse {
+	return dto.Warehouse(we)
 }
 
 func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
 	switch product.GetType() {
 	case dto.Book:
-		bookProductDto := product.(dto.BookProductDto)
+		bookProductDto := product.(dto.BookProduct)
 		return domain.BookProduct{
 			Product: domain.Product{
 				SKU:   bookProductDto.SKU,
@@ -149,13 +149,13 @@ func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
 	}
 }
 
-func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (dto.ProductDtoWithQuantity, error) {
+func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (dto.ProductWithQuantity, error) {
 	switch productEntity.Product.GetType() {
 	case domain.Book:
 		bookProductEntity := productEntity.Product.(domain.BookProduct)
-		return dto.ProductDtoWithQuantity{
-			IProduct: dto.BookProductDto{
-				ProductDto: dto.ProductDto{
+		return dto.ProductWithQuantity{
+			IProduct: dto.BookProduct{
+				Product: dto.Product{
 					SKU:   bookProductEntity.SKU,
 					Name:  bookProductEntity.Name,
 					Price: bookProductEntity.Price,
@@ -166,6 +166,6 @@ func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWith
 			Quantity: productEntity.Quantity,
 		}, nil
 	default:
-		return dto.ProductDtoWithQuantity{}, fmt.Errorf("unknown product type")
+		return dto.ProductWithQuantity{}, fmt.Errorf("unknown product type")
 	}
 }

@@ -1,4 +1,4 @@
-package inventory
+package rest
 
 import (
 	"encoding/json"
@@ -8,22 +8,22 @@ import (
 	"github.com/kijevigombooc/inventory-manager/internal/service"
 )
 
-func NewHandler(service service.Service) *handler {
-	return &handler{service: service}
+func NewInventoryHandler(service service.Service) *inventoryHandler {
+	return &inventoryHandler{service: service}
 }
 
-type handler struct {
+type inventoryHandler struct {
 	service service.Service
 }
 
-func (h *handler) RegisterRoutes(serveMux *http.ServeMux) {
+func (h *inventoryHandler) RegisterRoutes(serveMux *http.ServeMux) {
 	serveMux.HandleFunc("GET /warehouses", h.getWarehouses)
 	serveMux.HandleFunc("POST /warehouses", h.createWarehouse)
 	serveMux.HandleFunc("POST /insertProducts", h.insertProducts)
 	serveMux.HandleFunc("POST /removeProducts", h.removeProducts)
 }
 
-func (h *handler) getWarehouses(w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) getWarehouses(w http.ResponseWriter, r *http.Request) {
 	warehouses, err := h.service.GetWarehouses()
 	if err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusInternalServerError)
@@ -32,8 +32,8 @@ func (h *handler) getWarehouses(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, warehouses, http.StatusOK)
 }
 
-func (h *handler) createWarehouse(w http.ResponseWriter, r *http.Request) {
-	warehouse := dto.WarehouseDto{}
+func (h *inventoryHandler) createWarehouse(w http.ResponseWriter, r *http.Request) {
+	warehouse := dto.Warehouse{}
 	if err := json.NewDecoder(r.Body).Decode(&warehouse); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -46,7 +46,7 @@ func (h *handler) createWarehouse(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, warehouse, http.StatusCreated)
 }
 
-func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) insertProducts(w http.ResponseWriter, r *http.Request) {
 	var req dto.InsertProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
@@ -65,7 +65,7 @@ func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, req, http.StatusOK)
 }
 
-func (h *handler) removeProducts(w http.ResponseWriter, r *http.Request) {
+func (h *inventoryHandler) removeProducts(w http.ResponseWriter, r *http.Request) {
 	var req dto.RemoveProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)

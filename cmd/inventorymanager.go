@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kijevigombooc/inventory-manager/internal/inventory"
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/handler/rest"
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/store/sql"
 	"github.com/kijevigombooc/inventory-manager/internal/service"
 )
@@ -22,7 +22,7 @@ func main() {
 	service := service.NewInventoryService(store)
 
 	mux := http.NewServeMux()
-	handler := inventory.NewHandler(service)
+	handler := rest.NewInventoryHandler(service)
 	handler.RegisterRoutes(mux)
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
