@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/handler/rest"
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/service"
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/store/sql"
-	"github.com/kijevigombooc/inventory-manager/internal/service"
 )
 
 func main() {

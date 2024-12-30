@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/handler/dto"
-	"github.com/kijevigombooc/inventory-manager/internal/service"
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/service"
 )
 
 func NewInventoryHandler(service service.Service) *inventoryHandler {
