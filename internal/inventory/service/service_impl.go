@@ -30,7 +30,7 @@ func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetail, error) {
 		if err != nil {
 			return nil, err
 		}
-		productDtos, err := utils.MapErrored(productEntities, productEntityWithQuantityToDtoWithQuantity)
+		productDtos, err := utils.MapErrored(productEntities, productWithQuantityEntityToDto)
 		if err != nil {
 			return nil, err
 		}
@@ -140,6 +140,7 @@ func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
 				SKU:   bookProductDto.SKU,
 				Name:  bookProductDto.Name,
 				Price: bookProductDto.Price,
+				Brand: domain.Brand(bookProductDto.Brand),      // TODO: check conversion error
 				Type:  domain.ProductType(bookProductDto.Type), // TODO: check conversion error
 			},
 			Author: bookProductDto.Author,
@@ -149,7 +150,7 @@ func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
 	}
 }
 
-func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (dto.ProductWithQuantity, error) {
+func productWithQuantityEntityToDto(productEntity domain.ProductWithQuantity) (dto.ProductWithQuantity, error) {
 	switch productEntity.Product.GetType() {
 	case domain.Book:
 		bookProductEntity := productEntity.Product.(domain.BookProduct)
@@ -159,6 +160,7 @@ func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWith
 					SKU:   bookProductEntity.SKU,
 					Name:  bookProductEntity.Name,
 					Price: bookProductEntity.Price,
+					Brand: dto.Brand(bookProductEntity.Brand),      // TODO: check conversion error
 					Type:  dto.ProductType(bookProductEntity.Type), // TODO: check conversion error
 				},
 				Author: bookProductEntity.Author,

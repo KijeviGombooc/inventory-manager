@@ -100,16 +100,44 @@ func (t *SqlTransaction) GetUsedCapacity(warehouseName string) (int, error) {
 	return usedCapacity, nil
 }
 func (t *SqlTransaction) InsertProduct(warehouseName string, product domain.IProduct, toInsertQuantity int) error {
-	_, err := t.tx.Exec(query.InsertOrIgnoreIntoProducts, product.GetSKU(), product.GetName(), product.GetPrice(), product.GetType())
-	switch product.GetType() {
-	case domain.Book:
-		_, err = t.tx.Exec(query.InsertOrIgnoreIntoBookProducts, product.GetSKU(), product.(domain.BookProduct).Author)
-	}
-	if err != nil {
+	baseProduct := product.GetBaseProduct()
+	if _, err := t.tx.Exec(
+		query.InsertOrIgnoreIntoBrands,
+		baseProduct.Brand.Name,
+		baseProduct.Brand.Quality,
+	); err != nil {
 		return err
 	}
-	_, err = t.tx.Exec(query.InsertOrUpdateIntoWarehouseProducts, warehouseName, product.GetSKU(), toInsertQuantity, toInsertQuantity)
-	return err
+	if _, err := t.tx.Exec(
+		query.InsertOrIgnoreIntoProducts,
+		baseProduct.SKU,
+		baseProduct.Name,
+		baseProduct.Price,
+		baseProduct.Brand.Name,
+		baseProduct.Type,
+	); err != nil {
+		return err
+	}
+	switch product.GetType() {
+	case domain.Book:
+		if _, err := t.tx.Exec(
+			query.InsertOrIgnoreIntoBookProducts,
+			baseProduct.SKU,
+			product.(domain.BookProduct).Author,
+		); err != nil {
+			return err
+		}
+	}
+	if _, err := t.tx.Exec(
+		query.InsertOrUpdateIntoWarehouseProducts,
+		warehouseName,
+		baseProduct.SKU,
+		toInsertQuantity,
+		toInsertQuantity,
+	); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t *SqlTransaction) GetWarehouseProductsBySkuOrderedFirstWithName(warehouseName string, sku string) ([]domain.WarehouseProduct, error) {
@@ -158,10 +186,14 @@ func (t *SqlTransaction) mapCurrentRowsToProduct(rows *sql.Rows) (domain.IProduc
 		&baseProduct.SKU,
 		&baseProduct.Name,
 		&baseProduct.Price,
+		&baseProduct.Brand.Name,
 		&baseProduct.Type,
 		&quantity,
 	); err != nil {
 		return nil, quantity, err
+	}
+	if err := t.tx.QueryRow(query.SelectBrandQuality, baseProduct.Brand.Name).Scan(&baseProduct.Brand.Quality); err != nil {
+		return nil, 0, err
 	}
 	switch baseProduct.Type {
 	case domain.Book:

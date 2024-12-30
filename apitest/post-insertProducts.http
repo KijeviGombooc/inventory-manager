@@ -9,6 +9,10 @@ Content-Type: application/json
     "sku": "SKU-1",
     "name": "Product 1",
     "price": 12,
+    "brand": {
+      "name": "brand name",
+      "quality": 4
+    },
     "type": "Book",
     "author": "Arthur Author"
   }
@@ -25,6 +29,10 @@ Content-Type: application/json
     "sku": "SKU-1",
     "name": "Product 1",
     "price": 12,
+    "brand": {
+      "name": "brand name",
+      "quality": 4
+    },
     "type": "Book",
     "author": "Arthur Author"
   }

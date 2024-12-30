@@ -1,8 +1,6 @@
 package domain
 
 type IProduct interface {
-	GetSKU() string
-	GetName() string
-	GetPrice() int
+	GetBaseProduct() Product
 	GetType() ProductType
 }

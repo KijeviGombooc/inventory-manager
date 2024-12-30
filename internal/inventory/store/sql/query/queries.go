@@ -12,7 +12,15 @@ const CreateProductsTable = `
 		sku TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
 		price INTEGER NOT NULL,
-		type TEXT NOT NULL
+		brand TEXT NOT NULL,
+		type TEXT NOT NULL,
+		FOREIGN KEY (brand) REFERENCES brands (name)
+	)
+`
+const CreateBrandsTable = `
+	CREATE TABLE IF NOT EXISTS brands (
+		name TEXT PRIMARY KEY,
+		category INTEGER NOT NULL CHECK(category BETWEEN 1 AND 5)
 	)
 `
 const CreateWarehouseProductsTable = `
@@ -34,6 +42,7 @@ const CreateBookProductsTable = `
 `
 const SelectWarehouses = "SELECT name, address, capacity FROM warehouses"
 const InsertIntoWarehouses = "INSERT INTO warehouses (name, address, capacity) VALUES (?, ?, ?)"
+const SelectBrandQuality = "SELECT category FROM brands WHERE name = ?"
 const SelectFromBookProducts = "SELECT author FROM book_products WHERE sku = ?"
 
 const SelectWarehousesOrderedFirstWithName = `
@@ -42,7 +51,7 @@ const SelectWarehousesOrderedFirstWithName = `
 			ORDER BY CASE WHEN name = ? THEN 0 ELSE 1 END, name
 		`
 const SelectProductsByWarehouse = `
-		SELECT p.sku, p.name, p.price, p.type, wp.quantity
+		SELECT p.sku, p.name, p.price, p.brand, p.type, wp.quantity
 		FROM products p
 		JOIN warehouse_products wp ON p.sku = wp.sku
 		WHERE wp.warehouse_name = ? AND wp.quantity > 0
@@ -62,9 +71,13 @@ const SelectWarehouseProductQuantity = `
 		SELECT quantity FROM warehouse_products
 		WHERE warehouse_name = ? AND sku = ?
 	`
+const InsertOrIgnoreIntoBrands = `
+	INSERT OR IGNORE INTO brands (name, category)
+	VALUES (?, ?)
+`
 const InsertOrIgnoreIntoProducts = `
-	INSERT OR IGNORE INTO products (sku, name, price, type)
-	VALUES (?, ?, ?, ?)
+	INSERT OR IGNORE INTO products (sku, name, price, brand, type)
+	VALUES (?, ?, ?, ?, ?)
 `
 const InsertOrIgnoreIntoBookProducts = `
 					INSERT OR IGNORE INTO book_products (sku, author)

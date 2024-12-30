@@ -28,6 +28,9 @@ func (s *inventoryStore) Init() error {
 	if _, err := s.db.Exec(query.CreateWarehousesTable); err != nil {
 		return err
 	}
+	if _, err := s.db.Exec(query.CreateBrandsTable); err != nil {
+		return err
+	}
 	if _, err := s.db.Exec(query.CreateProductsTable); err != nil {
 		return err
 	}
