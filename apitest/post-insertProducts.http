@@ -1,9 +1,26 @@
+### Insert into warehouse 1
 POST http://localhost:8080/insertProducts
 Content-Type: application/json
 
 {
   "warehouseName": "Warehouse 1",
-  "quantity": 1,
+  "quantity": 2,
+  "product": {
+    "sku": "SKU-1",
+    "name": "Product 1",
+    "price": 12,
+    "type": "Book",
+    "author": "Arthur Author"
+  }
+}
+
+### Insert into warehouse 2
+POST http://localhost:8080/insertProducts
+Content-Type: application/json
+
+{
+  "warehouseName": "Warehouse 2",
+  "quantity": 2,
   "product": {
     "sku": "SKU-1",
     "name": "Product 1",

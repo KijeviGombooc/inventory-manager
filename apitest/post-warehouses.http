@@ -5,7 +5,7 @@ Content-Type: application/json
 {
   "name": "Warehouse 1",
   "address": "123 Main St",
-  "capacity": 5
+  "capacity": 4
 }
 
 ### Warehouse 2

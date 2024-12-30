@@ -3,7 +3,7 @@ POST http://localhost:8080/removeProducts
 Content-Type: application/json
 
 {
-  "warehouseName": "Warehouse 2",
+  "warehouseName": "Warehouse 1",
   "quantity": 4,
   "sku": "SKU-1"
 }
