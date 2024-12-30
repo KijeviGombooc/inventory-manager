@@ -1,33 +1,30 @@
-package inventory
+package service
 
 import (
 	"fmt"
 
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/handler/dto"
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/store"
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/store/domain"
 	"github.com/kijevigombooc/inventory-manager/internal/utils"
 )
 
-func NewService(store store.Store) *service {
-	return &service{store: store}
+func NewInventoryService(store store.Store) *inventoryService {
+	return &inventoryService{store: store}
 }
 
-type service struct {
+type inventoryService struct {
 	store store.Store
 }
 
-func WarehouseEntityToDto(we domain.Warehouse) WarehouseDto {
-	return WarehouseDto(we)
-}
-
-func (s *service) GetWarehouses() ([]WarehouseDetailDto, error) {
+func (s *inventoryService) GetWarehouses() ([]dto.WarehouseDetailDto, error) {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 	warehouses, err := trx.GetWarehouses()
 	if err != nil {
 		return nil, err
 	}
-	result := []WarehouseDetailDto{}
+	result := []dto.WarehouseDetailDto{}
 	for _, warehouse := range warehouses {
 		productEntities, err := trx.GetProductsByWarehouse(warehouse.Name)
 		if err != nil {
@@ -37,8 +34,8 @@ func (s *service) GetWarehouses() ([]WarehouseDetailDto, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, WarehouseDetailDto{
-			WarehouseDto: WarehouseEntityToDto(warehouse),
+		result = append(result, dto.WarehouseDetailDto{
+			WarehouseDto: warehouseEntityToDto(warehouse),
 			Products:     productDtos,
 		})
 	}
@@ -48,7 +45,7 @@ func (s *service) GetWarehouses() ([]WarehouseDetailDto, error) {
 	return result, nil
 }
 
-func (s *service) CreateWarehouse(warehouse WarehouseDto) error {
+func (s *inventoryService) CreateWarehouse(warehouse dto.WarehouseDto) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 	if err := trx.InsertWarehouse(domain.Warehouse(warehouse)); err != nil {
@@ -60,7 +57,7 @@ func (s *service) CreateWarehouse(warehouse WarehouseDto) error {
 	return nil
 }
 
-func (s *service) InsertProducts(warehouse string, product IProduct, quantity int) error {
+func (s *inventoryService) InsertProducts(warehouse string, product dto.IProduct, quantity int) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 	warehouses, err := trx.GetWarehousesOrderedFirstWithName(warehouse)
@@ -99,7 +96,7 @@ func (s *service) InsertProducts(warehouse string, product IProduct, quantity in
 	return nil
 }
 
-func (s *service) RemoveProducts(warehouseName string, sku string, quantity int) error {
+func (s *inventoryService) RemoveProducts(warehouseName string, sku string, quantity int) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
 
@@ -130,10 +127,14 @@ func (s *service) RemoveProducts(warehouseName string, sku string, quantity int)
 	return nil
 }
 
-func productDtoToEntity(product IProduct) (domain.IProduct, error) {
+func warehouseEntityToDto(we domain.Warehouse) dto.WarehouseDto {
+	return dto.WarehouseDto(we)
+}
+
+func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
 	switch product.GetType() {
-	case Book:
-		bookProductDto := product.(BookProductDto)
+	case dto.Book:
+		bookProductDto := product.(dto.BookProductDto)
 		return domain.BookProduct{
 			Product: domain.Product{
 				SKU:   bookProductDto.SKU,
@@ -148,23 +149,23 @@ func productDtoToEntity(product IProduct) (domain.IProduct, error) {
 	}
 }
 
-func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (ProductDtoWithQuantity, error) {
+func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (dto.ProductDtoWithQuantity, error) {
 	switch productEntity.Product.GetType() {
 	case domain.Book:
 		bookProductEntity := productEntity.Product.(domain.BookProduct)
-		return ProductDtoWithQuantity{
-			IProduct: BookProductDto{
-				ProductDto: ProductDto{
+		return dto.ProductDtoWithQuantity{
+			IProduct: dto.BookProductDto{
+				ProductDto: dto.ProductDto{
 					SKU:   bookProductEntity.SKU,
 					Name:  bookProductEntity.Name,
 					Price: bookProductEntity.Price,
-					Type:  ProductType(bookProductEntity.Type), // TODO: check conversion error
+					Type:  dto.ProductType(bookProductEntity.Type), // TODO: check conversion error
 				},
 				Author: bookProductEntity.Author,
 			},
 			Quantity: productEntity.Quantity,
 		}, nil
 	default:
-		return ProductDtoWithQuantity{}, fmt.Errorf("unknown product type")
+		return dto.ProductDtoWithQuantity{}, fmt.Errorf("unknown product type")
 	}
 }

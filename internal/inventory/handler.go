@@ -3,14 +3,17 @@ package inventory
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/handler/dto"
+	"github.com/kijevigombooc/inventory-manager/internal/service"
 )
 
-func NewHandler(service *service) *handler {
+func NewHandler(service service.Service) *handler {
 	return &handler{service: service}
 }
 
 type handler struct {
-	service *service
+	service service.Service
 }
 
 func (h *handler) RegisterRoutes(serveMux *http.ServeMux) {
@@ -30,7 +33,7 @@ func (h *handler) getWarehouses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) createWarehouse(w http.ResponseWriter, r *http.Request) {
-	warehouse := WarehouseDto{}
+	warehouse := dto.WarehouseDto{}
 	if err := json.NewDecoder(r.Body).Decode(&warehouse); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -44,7 +47,7 @@ func (h *handler) createWarehouse(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
-	var req InsertProductsRequest
+	var req dto.InsertProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
 		return
@@ -63,7 +66,7 @@ func (h *handler) insertProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) removeProducts(w http.ResponseWriter, r *http.Request) {
-	var req RemoveProductsRequest
+	var req dto.RemoveProductsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorMessageJSON(w, err.Error(), http.StatusBadRequest)
 		return

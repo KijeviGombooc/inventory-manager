@@ -1,4 +1,4 @@
-package inventory
+package dto
 
 import (
 	"encoding/json"

@@ -7,6 +7,7 @@ import (
 
 	"github.com/kijevigombooc/inventory-manager/internal/inventory"
 	"github.com/kijevigombooc/inventory-manager/internal/inventory/store/sql"
+	"github.com/kijevigombooc/inventory-manager/internal/service"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 
 	store := sql.NewInventoryStore(db)
 
-	service := inventory.NewService(store)
+	service := service.NewInventoryService(store)
 
 	mux := http.NewServeMux()
 	handler := inventory.NewHandler(service)
