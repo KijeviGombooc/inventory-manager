@@ -3,18 +3,20 @@ package inventory
 import (
 	"fmt"
 
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/store"
+	"github.com/kijevigombooc/inventory-manager/internal/inventory/store/domain"
 	"github.com/kijevigombooc/inventory-manager/internal/utils"
 )
 
-func NewService(store *store) *service {
+func NewService(store store.Store) *service {
 	return &service{store: store}
 }
 
 type service struct {
-	store *store
+	store store.Store
 }
 
-func WarehouseEntityToDto(we WarehouseEntity) WarehouseDto {
+func WarehouseEntityToDto(we domain.Warehouse) WarehouseDto {
 	return WarehouseDto(we)
 }
 
@@ -49,7 +51,7 @@ func (s *service) GetWarehouses() ([]WarehouseDetailDto, error) {
 func (s *service) CreateWarehouse(warehouse WarehouseDto) error {
 	trx := s.store.BeginTransaction()
 	defer trx.EndTransaction()
-	if err := trx.InsertWarehouse(WarehouseEntity(warehouse)); err != nil {
+	if err := trx.InsertWarehouse(domain.Warehouse(warehouse)); err != nil {
 		return err
 	}
 	if err := trx.CommitTransaction(); err != nil {
@@ -128,27 +130,37 @@ func (s *service) RemoveProducts(warehouseName string, sku string, quantity int)
 	return nil
 }
 
-func productDtoToEntity(product IProduct) (IProduct, error) {
+func productDtoToEntity(product IProduct) (domain.IProduct, error) {
 	switch product.GetType() {
 	case Book:
-		bookProduct := product.(BookProductDto)
-		return BookProductEntity{
-			ProductEntity: ProductEntity(bookProduct.ProductDto),
-			Author:        bookProduct.Author,
+		bookProductDto := product.(BookProductDto)
+		return domain.BookProduct{
+			Product: domain.Product{
+				SKU:   bookProductDto.SKU,
+				Name:  bookProductDto.Name,
+				Price: bookProductDto.Price,
+				Type:  domain.ProductType(bookProductDto.Type), // TODO: check conversion error
+			},
+			Author: bookProductDto.Author,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown product type")
 	}
 }
 
-func productEntityWithQuantityToDtoWithQuantity(productEntity ProductEntityWithQuantity) (ProductDtoWithQuantity, error) {
+func productEntityWithQuantityToDtoWithQuantity(productEntity domain.ProductWithQuantity) (ProductDtoWithQuantity, error) {
 	switch productEntity.Product.GetType() {
-	case Book:
-		bookProductEntity := productEntity.Product.(BookProductEntity)
+	case domain.Book:
+		bookProductEntity := productEntity.Product.(domain.BookProduct)
 		return ProductDtoWithQuantity{
 			IProduct: BookProductDto{
-				ProductDto: ProductDto(bookProductEntity.ProductEntity),
-				Author:     bookProductEntity.Author,
+				ProductDto: ProductDto{
+					SKU:   bookProductEntity.SKU,
+					Name:  bookProductEntity.Name,
+					Price: bookProductEntity.Price,
+					Type:  ProductType(bookProductEntity.Type), // TODO: check conversion error
+				},
+				Author: bookProductEntity.Author,
 			},
 			Quantity: productEntity.Quantity,
 		}, nil

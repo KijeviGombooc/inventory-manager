@@ -5,45 +5,11 @@ import (
 	"fmt"
 )
 
-type ProductEntity struct {
-	SKU   string
-	Name  string
-	Price int
-	Type  ProductType
-}
-
-type ProductEntityWithQuantity struct {
-	Product  IProduct
-	Quantity int
-}
-
-type WarehouseProductEntity struct {
-	WarehouseName string
-	Sku           string
-	Quantity      int
-}
-
 type ProductType string
 
 const (
 	Book ProductType = "Book"
 )
-
-type BookProductEntity struct {
-	ProductEntity
-	Author string
-}
-
-type BrandEntity struct {
-	Name    string
-	Quality int
-}
-
-type WarehouseEntity struct {
-	Name     string
-	Address  string
-	Capacity int
-}
 
 type InsertProductsRequest struct {
 	WarehouseName string   `json:"warehouseName"`
@@ -118,22 +84,6 @@ type IProduct interface {
 	GetName() string
 	GetPrice() int
 	GetType() ProductType
-}
-
-func (p ProductEntity) GetSKU() string {
-	return p.SKU
-}
-
-func (p ProductEntity) GetName() string {
-	return p.Name
-}
-
-func (p ProductEntity) GetPrice() int {
-	return p.Price
-}
-
-func (p ProductEntity) GetType() ProductType {
-	return p.Type
 }
 
 func (p ProductDto) GetSKU() string {
