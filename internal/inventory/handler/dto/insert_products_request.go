@@ -27,14 +27,28 @@ func (ipr *InsertProductsRequest) ParseProduct() error {
 	}
 	switch ProductType(productTypeStr) {
 	case Book:
-		var bookProduct BookProduct
-		productData, _ := json.Marshal(ipr.Product)
-		if err := json.Unmarshal(productData, &bookProduct); err != nil {
+		if err := unmarshallProduct(ipr, &BookProduct{}); err != nil {
 			return err
 		}
-		ipr.ParsedProduct = bookProduct
+	case Consumable:
+		if err := unmarshallProduct(ipr, &ConsumableProduct{}); err != nil {
+			return err
+		}
+	case Electronics:
+		if err := unmarshallProduct(ipr, &ElectronicsProduct{}); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown product type")
 	}
+	return nil
+}
+
+func unmarshallProduct[T IProduct](ipr *InsertProductsRequest, product T) error {
+	productData, _ := json.Marshal(ipr.Product)
+	if err := json.Unmarshal(productData, &product); err != nil {
+		return err
+	}
+	ipr.ParsedProduct = product
 	return nil
 }

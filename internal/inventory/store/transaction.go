@@ -14,6 +14,7 @@ type Transaction interface {
 	GetProductsByWarehouse(name string) ([]domain.ProductWithQuantity, error)
 	GetUsedCapacity(warehouseName string) (int, error)
 	InsertProduct(warehouseName string, product domain.IProduct, toInsertQuantity int) error
+	GetProductTypeBySku(sku string) (domain.ProductType, error)
 	GetWarehouseProductsBySkuOrderedFirstWithName(warehouseName string, sku string) ([]domain.WarehouseProduct, error)
 	RemoveProduct(warehouseName string, sku string, toRemoveQuantity int) (int, error)
 }

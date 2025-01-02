@@ -64,6 +64,14 @@ func (s *inventoryService) InsertProducts(warehouse string, product dto.IProduct
 	if err != nil {
 		return err
 	}
+	// check if product sku already exists with different type
+	productType, err := trx.GetProductTypeBySku(product.GetBaseProduct().SKU)
+	if err != nil {
+		return err
+	}
+	if productType != domain.None && productType != domain.ProductType(product.GetType()) {
+		return fmt.Errorf("product with sku %s already exists with different type", product.GetBaseProduct().SKU)
+	}
 	remainingQuantity := quantity
 	for _, warehouse := range warehouses {
 		usedCapacity, err := trx.GetUsedCapacity(warehouse.Name)
@@ -132,42 +140,69 @@ func warehouseEntityToDto(we domain.Warehouse) dto.Warehouse {
 }
 
 func productDtoToEntity(product dto.IProduct) (domain.IProduct, error) {
+	var result domain.IProduct = nil
 	switch product.GetType() {
 	case dto.Book:
-		bookProductDto := product.(dto.BookProduct)
-		return domain.BookProduct{
-			Product: domain.Product{
-				SKU:   bookProductDto.SKU,
-				Name:  bookProductDto.Name,
-				Price: bookProductDto.Price,
-				Brand: domain.Brand(bookProductDto.Brand),      // TODO: check conversion error
-				Type:  domain.ProductType(bookProductDto.Type), // TODO: check conversion error
-			},
+		bookProductDto := product.(*dto.BookProduct)
+		result = &domain.BookProduct{
 			Author: bookProductDto.Author,
-		}, nil
+		}
+	case dto.Consumable:
+		consumableProductDto := product.(*dto.ConsumableProduct)
+		result = &domain.ConsumableProduct{
+			ExpirationDate: consumableProductDto.ExpirationDate,
+		}
+	case dto.Electronics:
+		electronicsProductDto := product.(*dto.ElectronicsProduct)
+		result = &domain.ElectronicsProduct{
+			WarrantyPeriod: electronicsProductDto.WarrantyPeriod,
+		}
 	default:
 		return nil, fmt.Errorf("unknown product type")
 	}
+	baseProductDto := product.GetBaseProduct()
+	result.SetBaseProduct(domain.Product{
+		SKU:   baseProductDto.SKU,
+		Name:  baseProductDto.Name,
+		Price: baseProductDto.Price,
+		Brand: domain.Brand(baseProductDto.Brand),      // TODO: check conversion error
+		Type:  domain.ProductType(baseProductDto.Type), // TODO: check conversion error
+	})
+	return result, nil
 }
 
-func productWithQuantityEntityToDto(productEntity domain.ProductWithQuantity) (dto.ProductWithQuantity, error) {
-	switch productEntity.Product.GetType() {
+func productWithQuantityEntityToDto(productWithQuantity domain.ProductWithQuantity) (dto.ProductWithQuantity, error) {
+	result := dto.ProductWithQuantity{
+		Quantity: productWithQuantity.Quantity,
+	}
+	switch productWithQuantity.Product.GetType() {
 	case domain.Book:
-		bookProductEntity := productEntity.Product.(domain.BookProduct)
-		return dto.ProductWithQuantity{
-			IProduct: dto.BookProduct{
-				Product: dto.Product{
-					SKU:   bookProductEntity.SKU,
-					Name:  bookProductEntity.Name,
-					Price: bookProductEntity.Price,
-					Brand: dto.Brand(bookProductEntity.Brand),      // TODO: check conversion error
-					Type:  dto.ProductType(bookProductEntity.Type), // TODO: check conversion error
-				},
-				Author: bookProductEntity.Author,
-			},
-			Quantity: productEntity.Quantity,
-		}, nil
+		bookProductEntity := productWithQuantity.Product.(*domain.BookProduct)
+		result.IProduct = &dto.BookProduct{
+			Author: bookProductEntity.Author,
+		}
+	case domain.Consumable:
+		consumableProductEntity := productWithQuantity.Product.(*domain.ConsumableProduct)
+		result.IProduct = &dto.ConsumableProduct{
+			ExpirationDate: consumableProductEntity.ExpirationDate,
+		}
+	case domain.Electronics:
+		electronicsProductEntity := productWithQuantity.Product.(*domain.ElectronicsProduct)
+		result.IProduct = &dto.ElectronicsProduct{
+			WarrantyPeriod: electronicsProductEntity.WarrantyPeriod,
+		}
 	default:
 		return dto.ProductWithQuantity{}, fmt.Errorf("unknown product type")
 	}
+	baseProductEntity := productWithQuantity.Product.GetBaseProduct()
+	result.IProduct.SetBaseProduct(
+		dto.Product{
+			SKU:   baseProductEntity.SKU,
+			Name:  baseProductEntity.Name,
+			Price: baseProductEntity.Price,
+			Brand: dto.Brand(baseProductEntity.Brand),      // TODO: check conversion error
+			Type:  dto.ProductType(baseProductEntity.Type), // TODO: check conversion error
+		},
+	)
+	return result, nil
 }

@@ -40,6 +40,12 @@ func (s *inventoryStore) Init() error {
 	if _, err := s.db.Exec(query.CreateBookProductsTable); err != nil {
 		return err
 	}
+	if _, err := s.db.Exec(query.CreateConsumableProductsTable); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(query.CreateElectronicsProductsTable); err != nil {
+		return err
+	}
 	return nil
 }
 

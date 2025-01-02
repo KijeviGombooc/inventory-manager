@@ -17,3 +17,23 @@ Content-Type: application/json
   "quantity": 2,
   "sku": "SKU-1"
 }
+
+### Remove SKU-2 from warehouse 1
+POST http://localhost:8080/removeProducts
+Content-Type: application/json
+
+{
+  "warehouseName": "Warehouse 1",
+  "quantity": 2,
+  "sku": "SKU-2"
+}
+
+### Remove SKU-3 from warehouse 1
+POST http://localhost:8080/removeProducts
+Content-Type: application/json
+
+{
+  "warehouseName": "Warehouse 1",
+  "quantity": 4,
+  "sku": "SKU-3"
+}

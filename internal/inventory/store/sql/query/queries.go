@@ -40,10 +40,27 @@ const CreateBookProductsTable = `
 		FOREIGN KEY (sku) REFERENCES products (sku) ON DELETE CASCADE
 	)
 `
+const CreateConsumableProductsTable = `
+	CREATE TABLE IF NOT EXISTS consumable_products (
+		sku TEXT PRIMARY KEY,
+		expiration_date TEXT NOT NULL,
+		FOREIGN KEY (sku) REFERENCES products (sku) ON DELETE CASCADE
+	)
+`
+const CreateElectronicsProductsTable = `
+	CREATE TABLE IF NOT EXISTS electronics_products (
+		sku TEXT PRIMARY KEY,
+		warranty TEXT NOT NULL,
+		FOREIGN KEY (sku) REFERENCES products (sku) ON DELETE CASCADE
+	)
+`
 const SelectWarehouses = "SELECT name, address, capacity FROM warehouses"
 const InsertIntoWarehouses = "INSERT INTO warehouses (name, address, capacity) VALUES (?, ?, ?)"
 const SelectBrandQuality = "SELECT category FROM brands WHERE name = ?"
 const SelectFromBookProducts = "SELECT author FROM book_products WHERE sku = ?"
+const SelectFromConsumableProducts = "SELECT expiration_date FROM consumable_products WHERE sku = ?"
+const SelectFromElectronicsProducts = "SELECT warranty FROM electronics_products WHERE sku = ?"
+const SelectProductTypeBySku = "SELECT type FROM products WHERE sku = ?"
 
 const SelectWarehousesOrderedFirstWithName = `
 			SELECT name, address, capacity
@@ -81,6 +98,14 @@ const InsertOrIgnoreIntoProducts = `
 `
 const InsertOrIgnoreIntoBookProducts = `
 					INSERT OR IGNORE INTO book_products (sku, author)
+					VALUES (?, ?)
+				`
+const InsertOrIgnoreIntoConsumableProducts = `
+					INSERT OR IGNORE INTO consumable_products (sku, expiration_date)
+					VALUES (?, ?)
+				`
+const InsertOrIgnoreIntoElectronicsProducts = `
+					INSERT OR IGNORE INTO electronics_products (sku, warranty)
 					VALUES (?, ?)
 				`
 const InsertOrUpdateIntoWarehouseProducts = `

@@ -123,7 +123,23 @@ func (t *SqlTransaction) InsertProduct(warehouseName string, product domain.IPro
 		if _, err := t.tx.Exec(
 			query.InsertOrIgnoreIntoBookProducts,
 			baseProduct.SKU,
-			product.(domain.BookProduct).Author,
+			product.(*domain.BookProduct).Author,
+		); err != nil {
+			return err
+		}
+	case domain.Consumable:
+		if _, err := t.tx.Exec(
+			query.InsertOrIgnoreIntoConsumableProducts,
+			baseProduct.SKU,
+			product.(*domain.ConsumableProduct).ExpirationDate,
+		); err != nil {
+			return err
+		}
+	case domain.Electronics:
+		if _, err := t.tx.Exec(
+			query.InsertOrIgnoreIntoElectronicsProducts,
+			baseProduct.SKU,
+			product.(*domain.ElectronicsProduct).WarrantyPeriod,
 		); err != nil {
 			return err
 		}
@@ -138,6 +154,18 @@ func (t *SqlTransaction) InsertProduct(warehouseName string, product domain.IPro
 		return err
 	}
 	return nil
+}
+
+func (t *SqlTransaction) GetProductTypeBySku(sku string) (domain.ProductType, error) {
+	var productType domain.ProductType
+	err := t.tx.QueryRow(query.SelectProductTypeBySku, sku).Scan(&productType)
+	if err == sql.ErrNoRows {
+		return domain.None, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return productType, nil
 }
 
 func (t *SqlTransaction) GetWarehouseProductsBySkuOrderedFirstWithName(warehouseName string, sku string) ([]domain.WarehouseProduct, error) {
@@ -204,7 +232,25 @@ func (t *SqlTransaction) mapCurrentRowsToProduct(rows *sql.Rows) (domain.IProduc
 		if err != nil {
 			return nil, quantity, err
 		}
-		return product, quantity, nil
+		return &product, quantity, nil
+	case domain.Consumable:
+		product := domain.ConsumableProduct{
+			Product: baseProduct,
+		}
+		err := t.tx.QueryRow(query.SelectFromConsumableProducts, product.SKU).Scan(&product.ExpirationDate)
+		if err != nil {
+			return nil, quantity, err
+		}
+		return &product, quantity, nil
+	case domain.Electronics:
+		product := domain.ElectronicsProduct{
+			Product: baseProduct,
+		}
+		err := t.tx.QueryRow(query.SelectFromElectronicsProducts, product.SKU).Scan(&product.WarrantyPeriod)
+		if err != nil {
+			return nil, quantity, err
+		}
+		return &product, quantity, nil
 	default:
 		return nil, quantity, fmt.Errorf("unknown product type: %s", baseProduct.Type)
 	}

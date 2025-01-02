@@ -37,3 +37,43 @@ Content-Type: application/json
     "author": "Arthur Author"
   }
 }
+
+### Insert Consumables into warehouse 1
+POST http://localhost:8080/insertProducts
+Content-Type: application/json
+
+{
+  "warehouseName": "Warehouse 1",
+  "quantity": 2,
+  "product": {
+    "sku": "SKU-2",
+    "name": "Product 1",
+    "price": 12,
+    "brand": {
+      "name": "brand name",
+      "quality": 4
+    },
+    "type": "Consumable",
+    "expirationDate": "2024-12-12"
+  }
+}
+
+### Insert Electronics into warehouse 1
+POST http://localhost:8080/insertProducts
+Content-Type: application/json
+
+{
+  "warehouseName": "Warehouse 1",
+  "quantity": 2,
+  "product": {
+    "sku": "SKU-3",
+    "name": "Product 1",
+    "price": 12,
+    "brand": {
+      "name": "brand name",
+      "quality": 4
+    },
+    "type": "Electronics",
+    "warranty": "2 years"
+  }
+}
