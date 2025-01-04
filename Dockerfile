@@ -1,5 +1,5 @@
 # Stage 1: Development
-FROM alpine:3.20 AS dev
+FROM alpine:3.21 AS dev
 # Install dependencies
 RUN apk add --no-cache \
     git \
